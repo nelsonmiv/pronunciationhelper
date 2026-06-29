@@ -77,7 +77,7 @@
       <i id="statusNoticeIcon" class="fa-solid fa-circle-info text-indigo-400 text-xl mt-0.5"></i>
       <div>
         <h3 id="statusNoticeTitle" class="font-semibold text-indigo-300 text-sm">Modo de Voz Nativo Activo</h3>
-        <p id="statusNoticeDesc" class="text-xs text-indigo-200/80 mt-1">La app está usando las voces gratuitas integradas de tu navegador (Google/Sistema). Si deseas activar las correcciones avanzadas con Inteligencia Artificial y las voces hiperrealistas de Gemini, añade una clave en "Configurar API" arriba.</p>
+        <p id="statusNoticeDesc" class="text-xs text-indigo-200/80 mt-1">La app está usando las voces gratuitas integradas de tu navegador. Si deseas activar las correcciones avanzadas con Inteligencia Artificial, las voces hiperrealistas de Gemini y las herramientas ✨ premium de estudio, añade una clave en "Configurar API" arriba.</p>
       </div>
     </div>
 
@@ -89,9 +89,12 @@
             <i class="fa-solid fa-file-text text-indigo-400"></i> 1. Cargar Texto de Práctica
           </h2>
           <!-- Controles de Carga -->
-          <div class="flex items-center gap-2 flex-wrap">
+          <div class="flex items-center gap-1.5 flex-wrap">
             <button id="btnOpenCamera" class="text-xs bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 px-2.5 py-1.5 rounded-lg border border-indigo-500/20 flex items-center gap-1 transition">
               <i class="fa-solid fa-camera"></i> Escanear Libro
+            </button>
+            <button id="btnAiGenerateTextTrigger" class="hidden text-xs bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 px-2.5 py-1.5 rounded-lg border border-purple-500/20 items-center gap-1 transition">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> ✨ Generar Texto
             </button>
             <button onclick="loadSampleText('short')" class="text-xs text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 px-2 py-1.5 rounded">Ejemplo Corto</button>
             <button onclick="loadSampleText('long')" class="text-xs text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 px-2 py-1.5 rounded">Ejemplo Largo</button>
@@ -165,6 +168,44 @@
           </div>
           
           <p id="targetTextDisplay" class="text-lg sm:text-xl font-medium text-slate-100 leading-relaxed"></p>
+          
+          <!-- Botones adicionales premium del texto -->
+          <div id="premiumStudyTools" class="hidden gap-2 mt-2 border-t border-slate-800/80 pt-3">
+            <button id="btnExplainVocab" class="bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 text-xs font-semibold py-1.5 px-3 rounded-lg border border-purple-500/20 flex items-center gap-1.5 transition">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> ✨ Explicar Vocabulario
+            </button>
+            <button id="btnQuizGen" class="bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 text-xs font-semibold py-1.5 px-3 rounded-lg border border-indigo-500/20 flex items-center gap-1.5 transition">
+              <i class="fa-solid fa-circle-question"></i> ✨ Test de Comprensión
+            </button>
+          </div>
+        </div>
+
+        <!-- Panel de Vocabulario Explicado (Se expande si se solicita) -->
+        <div id="vocabExplainerCard" class="hidden bg-purple-950/20 border border-purple-800/30 rounded-xl p-5 flex flex-col gap-3">
+          <div class="flex justify-between items-center">
+            <h4 class="text-purple-300 font-semibold text-sm flex items-center gap-2">
+              <i class="fa-solid fa-book-open"></i> ✨ Glosario de Vocabulario Útil
+            </h4>
+            <button onclick="document.getElementById('vocabExplainerCard').classList.add('hidden')" class="text-slate-400 hover:text-slate-200 text-xs">
+              <i class="fa-solid fa-times"></i> Cerrar
+            </button>
+          </div>
+          <div id="vocabContent" class="text-slate-300 text-xs sm:text-sm space-y-3 leading-relaxed"></div>
+        </div>
+
+        <!-- Panel de Quiz Interactivo (Se expande si se solicita) -->
+        <div id="quizContainerCard" class="hidden bg-indigo-950/20 border border-indigo-800/30 rounded-xl p-5 flex flex-col gap-4">
+          <div class="flex justify-between items-center border-b border-indigo-800/30 pb-2">
+            <h4 class="text-indigo-300 font-semibold text-sm flex items-center gap-2">
+              <i class="fa-solid fa-brain"></i> ✨ Cuestionario de Comprensión Lectora
+            </h4>
+            <button onclick="document.getElementById('quizContainerCard').classList.add('hidden')" class="text-slate-400 hover:text-slate-200 text-xs">
+              <i class="fa-solid fa-times"></i> Cerrar
+            </button>
+          </div>
+          <div id="quizQuestionsWrapper" class="space-y-5">
+            <!-- Las preguntas se inyectarán aquí -->
+          </div>
         </div>
 
         <!-- Zona de Grabación / Transcripción en tiempo real -->
@@ -228,6 +269,47 @@
     </section>
 
   </main>
+
+  <!-- MODAL DE GENERACIÓN DE TEXTO CON IA -->
+  <div id="aiTextModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
+      <div class="flex justify-between items-center p-5 border-b border-slate-800">
+        <h3 class="font-bold text-lg text-slate-100 flex items-center gap-2">
+          <i class="fa-solid fa-wand-magic-sparkles text-purple-400"></i> ✨ Generar Texto Inteligente
+        </h3>
+        <button id="btnCloseAiText" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="p-5 flex flex-col gap-4">
+        <p class="text-xs text-slate-400 leading-relaxed">
+          Pídele a Gemini que diseñe un párrafo personalizado de práctica de acuerdo a lo que necesites estudiar hoy.
+        </p>
+
+        <!-- Nivel de dificultad -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-semibold text-slate-300">Nivel de dificultad:</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button type="button" data-level="Beginner" class="ai-level-btn py-2 text-xs font-semibold rounded-lg bg-slate-850 border border-slate-700 hover:border-purple-500/50 text-slate-300 transition active">Principiante</button>
+            <button type="button" data-level="Intermediate" class="ai-level-btn py-2 text-xs font-semibold rounded-lg bg-slate-850 border border-slate-700 hover:border-purple-500/50 text-slate-300 transition">Intermedio</button>
+            <button type="button" data-level="Advanced" class="ai-level-btn py-2 text-xs font-semibold rounded-lg bg-slate-850 border border-slate-700 hover:border-purple-500/50 text-slate-300 transition">Avanzado</button>
+          </div>
+        </div>
+
+        <!-- Temática -->
+        <div class="flex flex-col gap-1.5">
+          <label for="aiTopicInput" class="text-xs font-semibold text-slate-300">Temática o Contexto:</label>
+          <input id="aiTopicInput" type="text" placeholder="Ej: Registrarse en un hotel, entrevista laboral, preparar café..." class="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-purple-500">
+        </div>
+
+        <div class="flex gap-2 justify-end mt-2">
+          <button id="btnAiGenerateAction" class="w-full bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-bolt"></i> ✨ Redactar con Gemini
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- MODAL DE CÁMARA Y OCR -->
   <div id="cameraModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
@@ -297,7 +379,7 @@
 
       <div class="p-5 flex flex-col gap-4">
         <p class="text-xs text-slate-400 leading-relaxed">
-          Ingresa tu API Key de Gemini para activar la evaluación detallada del Profesor IA y las voces fotorrealistas avanzadas. Tu clave no se guarda en ningún servidor, se almacena de forma segura en la memoria de tu navegador (<code class="bg-slate-800 px-1 py-0.5 rounded text-indigo-300">localStorage</code>).
+          Ingresa tu API Key de Gemini para activar la evaluación detallada del Profesor IA, las herramientas premium de estudio y las voces fotorrealistas avanzadas. Tu clave no se guarda en ningún servidor, se almacena de forma segura en la memoria de tu navegador (<code class="bg-slate-800 px-1 py-0.5 rounded text-indigo-300">localStorage</code>).
         </p>
 
         <div class="flex flex-col gap-1.5">
@@ -345,6 +427,9 @@
     // Variables de Cámara y OCR
     let videoStream = null;
     let cameraFacingMode = "environment"; // "environment" (trasera) o "user" (frontal)
+
+    // Variables de Generación con IA
+    let selectedDifficultyLevel = "Beginner";
 
     // Servicios del Navegador para Reconocimiento de Voz (Web Speech API)
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -414,6 +499,23 @@
     const ocrLoadingOverlay = document.getElementById("ocrLoadingOverlay");
     const ocrStatusMessage = document.getElementById("ocrStatusMessage");
     const ocrProgressBar = document.getElementById("ocrProgressBar");
+
+    // Herramientas de Estudio Premium
+    const premiumStudyTools = document.getElementById("premiumStudyTools");
+    const btnExplainVocab = document.getElementById("btnExplainVocab");
+    const btnQuizGen = document.getElementById("btnQuizGen");
+    const vocabExplainerCard = document.getElementById("vocabExplainerCard");
+    const vocabContent = document.getElementById("vocabContent");
+    const quizContainerCard = document.getElementById("quizContainerCard");
+    const quizQuestionsWrapper = document.getElementById("quizQuestionsWrapper");
+
+    // Modal Generar con IA
+    const btnAiGenerateTextTrigger = document.getElementById("btnAiGenerateTextTrigger");
+    const aiTextModal = document.getElementById("aiTextModal");
+    const btnCloseAiText = document.getElementById("btnCloseAiText");
+    const btnAiGenerateAction = document.getElementById("btnAiGenerateAction");
+    const aiTopicInput = document.getElementById("aiTopicInput");
+    const aiLevelButtons = document.querySelectorAll(".ai-level-btn");
 
     // Inicialización de la Aplicación
     window.addEventListener("DOMContentLoaded", () => {
@@ -488,11 +590,17 @@
         statusNoticeIcon.className = "fa-solid fa-wand-magic-sparkles text-emerald-400 text-xl mt-0.5";
         statusNoticeTitle.innerText = "Modo Premium Activo";
         statusNoticeTitle.className = "font-semibold text-emerald-300 text-sm";
-        statusNoticeDesc.innerText = "¡Súper! El sistema está utilizando el Profesor de Inteligencia Artificial de Gemini para darte correcciones fonéticas y de entonación profundas, junto con voces ultra-realistas.";
+        statusNoticeDesc.innerText = "¡Súper! El sistema está utilizando el Profesor de Inteligencia Artificial de Gemini para darte correcciones fonéticas y de entonación profundas, voces ultra-realistas y herramientas premium.";
 
         geminiVoiceWrapper.classList.remove("hidden");
         geminiVoiceWrapper.classList.add("flex");
         nativeVoiceBadge.classList.add("hidden");
+
+        // Activar utilidades y botones premium de Gemini en la UI
+        btnAiGenerateTextTrigger.classList.remove("hidden");
+        btnAiGenerateTextTrigger.classList.add("flex");
+        premiumStudyTools.classList.remove("hidden");
+        premiumStudyTools.classList.add("flex");
       } else {
         keyStatusIcon.className = "fa-solid fa-circle-nodes text-indigo-400";
         keyStatusText.innerText = "Modo Libre";
@@ -503,11 +611,21 @@
         statusNoticeIcon.className = "fa-solid fa-circle-info text-indigo-400 text-xl mt-0.5";
         statusNoticeTitle.innerText = "Modo de Voz Nativo Activo";
         statusNoticeTitle.className = "font-semibold text-indigo-300 text-sm";
-        statusNoticeDesc.innerText = "La app está usando las voces gratuitas integradas de tu navegador (Google/Sistema). Si deseas activar las correcciones avanzadas con Inteligencia Artificial y las voces hiperrealistas de Gemini, añade una clave en 'Modo Libre' arriba.";
+        statusNoticeDesc.innerText = "La app está usando las voces gratuitas integradas de tu navegador. Si deseas activar las correcciones avanzadas con Inteligencia Artificial, las voces hiperrealistas de Gemini y las herramientas ✨ premium de estudio, añade una clave en 'Modo Libre' arriba.";
 
         geminiVoiceWrapper.classList.add("hidden");
         geminiVoiceWrapper.classList.remove("flex");
         nativeVoiceBadge.classList.remove("hidden");
+
+        // Ocultar utilidades premium de Gemini
+        btnAiGenerateTextTrigger.classList.add("hidden");
+        btnAiGenerateTextTrigger.classList.remove("flex");
+        premiumStudyTools.classList.add("hidden");
+        premiumStudyTools.classList.remove("flex");
+        
+        // Ocultar tarjetas de estudio si se desactivó la API
+        vocabExplainerCard.classList.add("hidden");
+        quizContainerCard.classList.add("hidden");
       }
     }
 
@@ -545,6 +663,10 @@
 
       currentSentenceIdx = 0;
       practiceSection.classList.remove("hidden");
+
+      // Ocultar las tarjetas de vocabulario y quiz previas para no confundir al estudiante con el nuevo texto
+      vocabExplainerCard.classList.add("hidden");
+      quizContainerCard.classList.add("hidden");
 
       updatePracticeCard();
     }
@@ -1143,6 +1265,279 @@ Analiza las diferencias, si omitió palabras, si pronunció fonemas incorrectame
         ocrLoadingOverlay.classList.add("hidden");
         ocrProgressBar.style.width = "0%";
       }
+    }
+
+    // ==========================================
+    // ✨ INTEGRACIONES DE IA DE GEMINI ADICIONALES ✨
+    // ==========================================
+
+    // --- 1. GENERACIÓN DE TEXTO CON IA DE GEMINI ---
+    btnAiGenerateTextTrigger.addEventListener("click", () => {
+      aiTextModal.classList.remove("hidden");
+    });
+
+    btnCloseAiText.addEventListener("click", () => {
+      aiTextModal.classList.add("hidden");
+    });
+
+    // Controladores de botones de nivel de dificultad del modal
+    aiLevelButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        aiLevelButtons.forEach(b => b.classList.remove("bg-purple-600", "text-white", "active"));
+        aiLevelButtons.forEach(b => b.classList.add("bg-slate-850", "text-slate-300"));
+        btn.classList.add("bg-purple-600", "text-white", "active");
+        btn.classList.remove("bg-slate-850", "text-slate-300");
+        selectedDifficultyLevel = btn.getAttribute("data-level");
+      });
+    });
+
+    btnAiGenerateAction.addEventListener("click", async () => {
+      const topic = aiTopicInput.value.trim() || "un tema cotidiano de conversación";
+      const targetLang = appLanguage.options[appLanguage.selectedIndex].text;
+      
+      btnAiGenerateAction.disabled = true;
+      btnAiGenerateAction.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> ✨ Redactando...';
+
+      const systemPrompt = `Eres un experto redactor pedagógico de textos para el aprendizaje de idiomas.
+Tu único objetivo es generar un párrafo único, fluido, interesante y cohesivo en el idioma solicitado.
+No agregues comentarios introductorios, ni explicaciones adicionales, ni markdown de títulos. Entrega SOLO el párrafo de texto limpio solicitado.`;
+
+      const userPrompt = `Genera un texto corto ideal para practicar pronunciación y lectura en voz alta.
+Idioma del texto: ${targetLang}
+Nivel de vocabulario y estructura: ${selectedDifficultyLevel} (Beginner = oraciones simples, Intermediate = compuesto moderado, Advanced = oraciones complejas y vocabulario rico).
+Tema o contexto deseado: ${topic}.
+Asegúrate de que tenga entre 2 y 4 oraciones bien construidas.`;
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+      try {
+        const result = await fetchWithRetry(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: userPrompt }] }],
+            systemInstruction: { parts: [{ text: systemPrompt }] }
+          })
+        });
+
+        const generatedText = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        if (generatedText) {
+          textInput.value = generatedText;
+          localStorage.setItem("vocalai_saved_text", generatedText);
+          savedIndicator.classList.remove("hidden");
+          aiTextModal.classList.add("hidden");
+          aiTopicInput.value = ""; // Reiniciar input
+          
+          preparePracticeSession(generatedText);
+          practiceSection.scrollIntoView({ behavior: 'smooth' });
+        } else {
+          throw new Error("No se pudo obtener texto");
+        }
+      } catch (err) {
+        console.error("Error al generar texto con IA: ", err);
+        alert("Ocurrió un error al intentar crear el texto personalizado de práctica. Verifica tu clave de API.");
+      } finally {
+        btnAiGenerateAction.disabled = false;
+        btnAiGenerateAction.innerHTML = '<i class="fa-solid fa-bolt"></i> ✨ Redactar con Gemini';
+      }
+    });
+
+
+    // --- 2. EXPLICACIÓN DE VOCABULARIO CON GEMINI ---
+    btnExplainVocab.addEventListener("click", async () => {
+      const textToAnalyze = targetTextDisplay.innerText.trim();
+      if (!textToAnalyze) return;
+
+      btnExplainVocab.disabled = true;
+      btnExplainVocab.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> ✨ Analizando...';
+
+      vocabExplainerCard.classList.remove("hidden");
+      vocabContent.innerHTML = `<div class="flex items-center gap-2 text-purple-400">
+        <i class="fa-solid fa-hourglass-start animate-pulse"></i>
+        <span>Gemini está seleccionando y analizando términos desafiantes...</span>
+      </div>`;
+
+      const targetLang = appLanguage.options[appLanguage.selectedIndex].text;
+      
+      const systemPrompt = `Eres un tutor de idiomas nativo y servicial.
+Genera una lista de 3 a 5 palabras, frases idiomáticas o conectores interesantes del texto entregado.
+Para cada término, debes proporcionar su significado en español de forma extremadamente clara y sencilla, y un ejemplo de uso práctico con su respectiva traducción.
+Responde de forma interactiva y legible en español utilizando texto enriquecido en HTML simple (sin usar etiquetas markdown como asteriscos, usa etiquetas <b>, <i> o listas <ul><li>).`;
+
+      const userPrompt = `Texto a analizar: "${textToAnalyze}"
+Idioma del texto: ${targetLang}
+Por favor, analiza este fragmento de lectura y proporciona las explicaciones didácticas correspondientes en español.`;
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+      try {
+        const result = await fetchWithRetry(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: userPrompt }] }],
+            systemInstruction: { parts: [{ text: systemPrompt }] }
+          })
+        });
+
+        const htmlExplanation = result.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (htmlExplanation) {
+          vocabContent.innerHTML = htmlExplanation;
+          vocabExplainerCard.scrollIntoView({ behavior: 'smooth' });
+        } else {
+          throw new Error("No se obtuvo contenido");
+        }
+      } catch (err) {
+        console.error("Error al explicar vocabulario:", err);
+        vocabContent.innerHTML = `<span class="text-red-400">Ocurrió un error al tratar de obtener el vocabulario interactivo. Verifica tu conexión o clave de API.</span>`;
+      } finally {
+        btnExplainVocab.disabled = false;
+        btnExplainVocab.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> ✨ Explicar Vocabulario';
+      }
+    });
+
+
+    // --- 3. GENERADOR DE QUIZ INTERACTIVO CON GEMINI ---
+    btnQuizGen.addEventListener("click", async () => {
+      const textForQuiz = targetTextDisplay.innerText.trim();
+      if (!textForQuiz) return;
+
+      btnQuizGen.disabled = true;
+      btnQuizGen.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> ✨ Creando Test...';
+
+      quizContainerCard.classList.remove("hidden");
+      quizQuestionsWrapper.innerHTML = `<div class="flex items-center gap-2 text-indigo-400">
+        <i class="fa-solid fa-hourglass-start animate-pulse"></i>
+        <span>Gemini está construyendo preguntas basadas en el texto actual...</span>
+      </div>`;
+
+      const targetLang = appLanguage.options[appLanguage.selectedIndex].text;
+
+      const systemPrompt = `Eres un evaluador académico de idiomas. Diseñas tests de comprensión de lectura en base a un texto de forma interactiva.
+Debes estructurar tu respuesta obligatoriamente como un archivo JSON con este esquema preciso para que la aplicación lo renderice:
+{
+  "questions": [
+    {
+      "question": "Escribe la pregunta sobre el texto aquí en idioma Español",
+      "options": ["Opción de respuesta A", "Opción de respuesta B", "Opción de respuesta C"],
+      "answer": 0, // El índice de la opción correcta de 0 a 2 (0=A, 1=B, 2=C)
+      "explanation": "Explicación de por qué esta es la respuesta correcta en base a la lectura, redactada en Español."
+    }
+  ]
+}
+Genera exactamente 3 preguntas de opción múltiple muy didácticas.`;
+
+      const userPrompt = `Texto base para evaluar: "${textForQuiz}"
+Idioma original del texto: ${targetLang}
+Por favor, genera el esquema JSON estructurado con preguntas en español para evaluar el nivel de comprensión de este párrafo.`;
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+      try {
+        const result = await fetchWithRetry(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: userPrompt }] }],
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            generationConfig: {
+              responseMimeType: "application/json",
+              responseSchema: {
+                type: "OBJECT",
+                properties: {
+                  questions: {
+                    type: "ARRAY",
+                    items: {
+                      type: "OBJECT",
+                      properties: {
+                        question: { type: "STRING" },
+                        options: {
+                          type: "ARRAY",
+                          items: { type: "STRING" }
+                        },
+                        answer: { type: "INTEGER" },
+                        explanation: { type: "STRING" }
+                      },
+                      required: ["question", "options", "answer", "explanation"]
+                    }
+                  }
+                },
+                required: ["questions"]
+              }
+            }
+          })
+        });
+
+        const rawJsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+        const quizData = JSON.parse(rawJsonText);
+
+        renderQuiz(quizData.questions);
+        quizContainerCard.scrollIntoView({ behavior: 'smooth' });
+
+      } catch (err) {
+        console.error("Error al generar el test:", err);
+        quizQuestionsWrapper.innerHTML = `<span class="text-red-400">Ocurrió un error al construir el test interactivo. Comprueba tu clave de API e inténtalo de nuevo.</span>`;
+      } finally {
+        btnQuizGen.disabled = false;
+        btnQuizGen.innerHTML = '<i class="fa-solid fa-circle-question"></i> ✨ Test de Comprensión';
+      }
+    });
+
+    // Renderizar las preguntas del cuestionario interactivo
+    function renderQuiz(questions) {
+      quizQuestionsWrapper.innerHTML = "";
+      
+      questions.forEach((q, qIndex) => {
+        const qDiv = document.createElement("div");
+        qDiv.className = "bg-slate-900/60 p-4 rounded-xl border border-indigo-900/20 flex flex-col gap-3";
+        
+        qDiv.innerHTML = `
+          <p class="font-semibold text-sm sm:text-base text-slate-200">${qIndex + 1}. ${q.question}</p>
+          <div class="flex flex-col gap-2 mt-1" id="optionsContainer_${qIndex}">
+            ${q.options.map((opt, optIdx) => `
+              <button onclick="checkAnswer(${qIndex}, ${optIdx}, ${q.answer}, '${escapeJSString(q.explanation)}')" class="quiz-opt-btn text-left text-xs sm:text-sm bg-slate-800 hover:bg-slate-700/80 text-slate-300 py-2.5 px-4 rounded-lg border border-slate-700/60 transition flex items-center justify-between">
+                <span>${opt}</span>
+                <i class="fa-regular fa-circle text-slate-500"></i>
+              </button>
+            `).join('')}
+          </div>
+          <div id="explanation_${qIndex}" class="hidden text-xs text-indigo-300 bg-indigo-950/40 p-3 rounded-lg border border-indigo-900/30 leading-relaxed mt-2 animate-in fade-in duration-200">
+            <strong>Explicación:</strong> ${q.explanation}
+          </div>
+        `;
+        
+        quizQuestionsWrapper.appendChild(qDiv);
+      });
+    }
+
+    // Comprobar la respuesta seleccionada por el estudiante en tiempo real
+    window.checkAnswer = function(qIndex, selectedIdx, correctIdx, explanation) {
+      const container = document.getElementById(`optionsContainer_${qIndex}`);
+      const buttons = container.querySelectorAll(".quiz-opt-btn");
+      
+      buttons.forEach((btn, idx) => {
+        // Deshabilitar botones adicionales
+        btn.disabled = true;
+        
+        if (idx === correctIdx) {
+          btn.className = "quiz-opt-btn text-left text-xs sm:text-sm bg-emerald-950/40 border border-emerald-500/50 text-emerald-300 py-2.5 px-4 rounded-lg flex items-center justify-between";
+          btn.innerHTML = `<span>${btn.innerText}</span> <i class="fa-solid fa-circle-check text-emerald-400"></i>`;
+        } else if (idx === selectedIdx) {
+          btn.className = "quiz-opt-btn text-left text-xs sm:text-sm bg-red-950/40 border border-red-500/50 text-red-300 py-2.5 px-4 rounded-lg flex items-center justify-between";
+          btn.innerHTML = `<span>${btn.innerText}</span> <i class="fa-solid fa-circle-xmark text-red-400"></i>`;
+        } else {
+          btn.className = "quiz-opt-btn text-left text-xs sm:text-sm bg-slate-850/40 border border-slate-800 text-slate-500 py-2.5 px-4 rounded-lg flex items-center justify-between opacity-50";
+        }
+      });
+
+      // Mostrar la tarjeta de explicación pedagógica
+      const explanationDiv = document.getElementById(`explanation_${qIndex}`);
+      explanationDiv.classList.remove("hidden");
+    };
+
+    // Auxiliar de escape de comillas
+    function escapeJSString(str) {
+      return str.replace(/'/g, "\\'").replace(/"/g, '&quot;');
     }
   </script>
 </body>
