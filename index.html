@@ -33,7 +33,7 @@
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col transition-colors duration-300">
 
-  <!-- TOP BAR -->
+  <!-- BARRA SUPERIOR DE NAVEGACIÓN -->
   <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40 px-4 py-3 sm:px-6">
     <div class="max-w-6xl mx-auto flex justify-between items-center">
       <div class="flex items-center gap-3">
@@ -42,12 +42,12 @@
         </div>
         <div>
           <h1 class="font-bold text-lg leading-none tracking-tight">VocalAI</h1>
-          <span class="text-xs text-slate-400">Tutor de Pronunciación Personalizado</span>
+          <span class="text-xs text-slate-400">Tutor de Pronunciación Inteligente</span>
         </div>
       </div>
       
-      <div class="flex items-center gap-3">
-        <!-- Idioma de la aplicación -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- Selector de Idioma de Práctica -->
         <select id="appLanguage" class="bg-slate-800 border border-slate-700 text-xs sm:text-sm rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 text-slate-200">
           <option value="es-ES">Español</option>
           <option value="en-US" selected>Inglés (US)</option>
@@ -58,10 +58,10 @@
           <option value="pt-BR">Portugués</option>
         </select>
 
-        <!-- Botón Configuración API Key -->
-        <button id="btnOpenConfig" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-1.5 rounded-lg border border-slate-700 transition text-xs sm:text-sm">
-          <i id="keyStatusIcon" class="fa-solid fa-key text-yellow-500"></i>
-          <span id="keyStatusText" class="hidden sm:inline">Configurar API</span>
+        <!-- Botón de Configuración de API Key -->
+        <button id="btnOpenConfig" class="flex items-center gap-1.5 sm:gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 transition text-xs sm:text-sm">
+          <i id="keyStatusIcon" class="fa-solid fa-circle-nodes text-slate-400"></i>
+          <span id="keyStatusText" class="hidden xs:inline">Modo Sin Llave</span>
         </button>
       </div>
     </div>
@@ -70,12 +70,12 @@
   <!-- CONTENIDO PRINCIPAL -->
   <main class="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 flex flex-col gap-6">
     
-    <!-- AVISO DE CONFIGURACIÓN REQUERIDA -->
-    <div id="noApiKeyWarning" class="bg-amber-950/40 border border-amber-800/60 p-4 rounded-xl flex items-start gap-3">
-      <i class="fa-solid fa-triangle-exclamation text-amber-500 text-xl mt-0.5"></i>
+    <!-- NOTIFICACIÓN DE ESTADO ACTUAL -->
+    <div id="statusNotice" class="bg-indigo-950/40 border border-indigo-800/40 p-4 rounded-xl flex items-start gap-3">
+      <i id="statusNoticeIcon" class="fa-solid fa-circle-info text-indigo-400 text-xl mt-0.5"></i>
       <div>
-        <h3 class="font-semibold text-amber-300 text-sm">Falta configurar la API Key de Gemini</h3>
-        <p class="text-xs text-amber-200/80 mt-1">Para habilitar las correcciones del Profesor IA y las voces realistas de Gemini, necesitas añadir tu propia clave de Google AI Studio. Haz clic en el botón de configuración de arriba.</p>
+        <h3 id="statusNoticeTitle" class="font-semibold text-indigo-300 text-sm">Modo de Voz Nativo Activo</h3>
+        <p id="statusNoticeDesc" class="text-xs text-indigo-200/80 mt-1">La app está usando las voces gratuitas integradas de tu navegador (Google/Sistema). Si deseas activar las correcciones avanzadas con Inteligencia Artificial y las voces hiperrealistas de Gemini, añade una clave en "Configurar API" arriba.</p>
       </div>
     </div>
 
@@ -101,7 +101,7 @@
     <!-- SECCIÓN 2: INTERFAZ DE PRÁCTICA -->
     <section id="practiceSection" class="hidden flex-col gap-6">
       
-      <!-- Selector de Modo de Práctica -->
+      <!-- Selector de Modo de Práctica (Pestañas) -->
       <div class="bg-slate-800/80 p-1.5 rounded-xl border border-slate-700 flex">
         <button id="tabOraciones" class="flex-1 py-2 text-xs sm:text-sm font-semibold rounded-lg text-indigo-400 bg-slate-900 shadow-sm flex items-center justify-center gap-2 transition">
           <i class="fa-solid fa-list-ol"></i> Práctica por Oraciones
@@ -129,19 +129,23 @@
 
         <!-- Texto Objetivo a Pronunciar -->
         <div class="bg-slate-900/60 rounded-xl p-5 border border-slate-800 flex flex-col gap-4">
-          <div class="flex justify-between items-start">
+          <div class="flex justify-between items-start flex-wrap gap-2">
             <span class="text-xs font-semibold text-indigo-400 tracking-wider uppercase">Texto Objetivo:</span>
             
-            <!-- Controles de Voz de Gemini -->
+            <!-- Controles de Voz -->
             <div class="flex items-center gap-2">
-              <select id="geminiVoiceSelect" class="bg-slate-800 border border-slate-700 text-xs rounded-lg px-2 py-1 text-slate-300 focus:outline-none">
-                <option value="Kore">Voz: Kore (Femenina)</option>
-                <option value="Zephyr">Voz: Zephyr (Masculina)</option>
-                <option value="Puck">Voz: Puck (Divertido)</option>
-                <option value="Charon">Voz: Charon (Robusta)</option>
-                <option value="Fenrir">Voz: Fenrir (Profunda)</option>
-              </select>
-              <button id="btnPlayTTS" title="Escuchar pronunciación nativa con Gemini TTS" class="w-8 h-8 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 hover:text-indigo-300 flex items-center justify-center transition">
+              <div id="geminiVoiceWrapper" class="hidden items-center gap-1.5">
+                <select id="geminiVoiceSelect" class="bg-slate-800 border border-slate-700 text-xs rounded-lg px-2 py-1 text-slate-300 focus:outline-none">
+                  <option value="Kore">Voz Gemini: Kore (Fem)</option>
+                  <option value="Zephyr">Voz Gemini: Zephyr (Masc)</option>
+                  <option value="Puck">Voz Gemini: Puck</option>
+                  <option value="Charon">Voz Gemini: Charon</option>
+                  <option value="Fenrir">Voz Gemini: Fenrir</option>
+                </select>
+              </div>
+              <span id="nativeVoiceBadge" class="text-[10px] bg-slate-800 border border-slate-700 text-slate-400 px-2 py-0.5 rounded-lg">Voz del Navegador</span>
+              
+              <button id="btnPlayTTS" title="Escuchar pronunciación nativa" class="w-8 h-8 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 hover:text-indigo-300 flex items-center justify-center transition">
                 <i class="fa-solid fa-volume-high"></i>
               </button>
             </div>
@@ -173,20 +177,20 @@
             </div>
           </div>
 
-          <!-- Cuadro de texto de lo que el alumno pronunció (Transcribiendo) -->
+          <!-- Cuadro de texto de lo que el alumno pronunció -->
           <div class="w-full bg-slate-900/30 border border-slate-800/60 rounded-xl p-4 flex flex-col gap-2">
-            <span class="text-xs font-semibold text-emerald-500 tracking-wider uppercase">Lo que escuchó el profesor:</span>
+            <span class="text-xs font-semibold text-emerald-500 tracking-wider uppercase">Lo que se escuchó:</span>
             <p id="studentSpeechTranscript" class="text-sm italic text-slate-400 min-h-[1.5rem]">Presiona el botón de micrófono para comenzar a hablar...</p>
           </div>
         </div>
 
-        <!-- Feedback del Profesor IA (Gemini) -->
+        <!-- Feedback del Profesor IA o Local -->
         <div id="feedbackContainer" class="hidden flex-col gap-4 border-t border-slate-800/80 pt-6">
           <div class="flex items-center gap-2.5">
             <div class="w-8 h-8 rounded-lg bg-indigo-600/10 flex items-center justify-center text-indigo-400">
               <i class="fa-solid fa-chalkboard-user"></i>
             </div>
-            <h4 class="font-semibold text-sm sm:text-base text-slate-200">Retroalimentación del Profesor de Idiomas</h4>
+            <h4 id="feedbackTitleText" class="font-semibold text-sm sm:text-base text-slate-200">Retroalimentación</h4>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -214,7 +218,7 @@
 
   <!-- MODAL CONFIGURACIÓN API KEY -->
   <div id="configModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
-    <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
       
       <div class="flex justify-between items-center p-5 border-b border-slate-800">
         <h3 class="font-bold text-lg text-slate-100 flex items-center gap-2">
@@ -227,7 +231,7 @@
 
       <div class="p-5 flex flex-col gap-4">
         <p class="text-xs text-slate-400 leading-relaxed">
-          Para que tu estudiante pueda recibir la retroalimentación del tutor y disfrutar de las voces de alta fidelidad, proporciona tu API Key de Gemini. Esta se guarda de forma segura únicamente en la memoria local del navegador (<code class="bg-slate-800 px-1 py-0.5 rounded text-indigo-300">localStorage</code>).
+          Ingresa tu API Key de Gemini para activar la evaluación detallada del Profesor IA y las voces fotorrealistas avanzadas. Tu clave no se guarda en ningún servidor, se almacena de forma segura en la memoria de tu navegador (<code class="bg-slate-800 px-1 py-0.5 rounded text-indigo-300">localStorage</code>).
         </p>
 
         <div class="flex flex-col gap-1.5">
@@ -238,12 +242,16 @@
               <i class="fa-solid fa-eye"></i>
             </button>
           </div>
-          <span class="text-[10px] text-slate-500">¿No tienes una clave? Consíguela gratis en <a href="https://aistudio.google.com/" target="_blank" class="text-indigo-400 hover:underline">Google AI Studio</a>.</span>
+          <span class="text-[10px] text-slate-500">¿No tienes clave? Consíguela gratis en <a href="https://aistudio.google.com/" target="_blank" class="text-indigo-400 hover:underline">Google AI Studio</a> o deja el campo vacío para usar el motor local gratuito.</span>
         </div>
 
         <div class="flex gap-2 justify-end mt-2">
+          <!-- Botón de Limpieza -->
+          <button id="btnClearApiKey" class="border border-slate-700 hover:bg-slate-800 text-slate-300 text-sm font-semibold py-2 px-4 rounded-xl transition">
+            Usar Modo Libre
+          </button>
           <button id="btnSaveConfig" class="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold py-2 px-4 rounded-xl transition">
-            Guardar Configuración
+            Guardar
           </button>
         </div>
       </div>
@@ -284,9 +292,14 @@
     const apiKeyInput = document.getElementById("apiKeyInput");
     const toggleApiKeyVis = document.getElementById("toggleApiKeyVis");
     const btnSaveConfig = document.getElementById("btnSaveConfig");
-    const noApiKeyWarning = document.getElementById("noApiKeyWarning");
+    const btnClearApiKey = document.getElementById("btnClearApiKey");
+    
     const keyStatusIcon = document.getElementById("keyStatusIcon");
     const keyStatusText = document.getElementById("keyStatusText");
+    const statusNotice = document.getElementById("statusNotice");
+    const statusNoticeIcon = document.getElementById("statusNoticeIcon");
+    const statusNoticeTitle = document.getElementById("statusNoticeTitle");
+    const statusNoticeDesc = document.getElementById("statusNoticeDesc");
 
     const textInput = document.getElementById("textInput");
     const btnProcessText = document.getElementById("btnProcessText");
@@ -302,7 +315,9 @@
     const btnPrevSentence = document.getElementById("btnPrevSentence");
     const btnNextSentence = document.getElementById("btnNextSentence");
 
+    const geminiVoiceWrapper = document.getElementById("geminiVoiceWrapper");
     const geminiVoiceSelect = document.getElementById("geminiVoiceSelect");
+    const nativeVoiceBadge = document.getElementById("nativeVoiceBadge");
     const btnPlayTTS = document.getElementById("btnPlayTTS");
     const targetTextDisplay = document.getElementById("targetTextDisplay");
 
@@ -311,12 +326,10 @@
     const studentSpeechTranscript = document.getElementById("studentSpeechTranscript");
 
     const feedbackContainer = document.getElementById("feedbackContainer");
+    const feedbackTitleText = document.getElementById("feedbackTitleText");
     const scoreValue = document.getElementById("scoreValue");
     const scoreLabel = document.getElementById("scoreLabel");
     const feedbackText = document.getElementById("feedbackText");
-
-    // Audio Context para reproducción de PCM (Gemini TTS)
-    let audioContext = null;
 
     // Inicialización de la Aplicación
     window.addEventListener("DOMContentLoaded", () => {
@@ -330,6 +343,14 @@
         btnRecord.classList.add('opacity-50', 'cursor-not-allowed');
       } else {
         setupRecognitionEvents();
+      }
+
+      // Asegurar que las voces del navegador estén cargadas
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.getVoices();
+        window.speechSynthesis.onvoiceschanged = () => {
+          // Evento gatillo para Chrome
+        };
       }
     });
 
@@ -354,17 +375,54 @@
       localStorage.setItem("gemini_api_key", apiKey);
       updateApiKeyStatus();
       configModal.classList.add("hidden");
+      updatePracticeCard();
+    });
+
+    btnClearApiKey.addEventListener("click", () => {
+      apiKey = "";
+      localStorage.removeItem("gemini_api_key");
+      updateApiKeyStatus();
+      configModal.classList.add("hidden");
+      updatePracticeCard();
     });
 
     function updateApiKeyStatus() {
       if (apiKey) {
-        noApiKeyWarning.classList.add("hidden");
-        keyStatusIcon.className = "fa-solid fa-key text-emerald-500";
-        keyStatusText.innerText = "API Configurada";
+        // Modo Premium con Gemini
+        keyStatusIcon.className = "fa-solid fa-circle-check text-emerald-400";
+        keyStatusText.innerText = "Modo IA Premium";
+        keyStatusText.className = "text-emerald-400 hidden xs:inline font-semibold";
+        btnOpenConfig.className = "flex items-center gap-1.5 sm:gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-emerald-500/50 transition text-xs sm:text-sm";
+
+        // Actualizar banner superior
+        statusNotice.className = "bg-emerald-950/20 border border-emerald-800/40 p-4 rounded-xl flex items-start gap-3";
+        statusNoticeIcon.className = "fa-solid fa-wand-magic-sparkles text-emerald-400 text-xl mt-0.5";
+        statusNoticeTitle.innerText = "Modo Premium Activo";
+        statusNoticeTitle.className = "font-semibold text-emerald-300 text-sm";
+        statusNoticeDesc.innerText = "¡Súper! El sistema está utilizando el Profesor de Inteligencia Artificial de Gemini para darte correcciones fonéticas y de entonación profundas, junto con voces ultra-realistas.";
+
+        // Mostrar u ocultar selectores de voz de Gemini
+        geminiVoiceWrapper.classList.remove("hidden");
+        geminiVoiceWrapper.classList.add("flex");
+        nativeVoiceBadge.classList.add("hidden");
       } else {
-        noApiKeyWarning.classList.remove("hidden");
-        keyStatusIcon.className = "fa-solid fa-key text-amber-500";
-        keyStatusText.innerText = "Configurar API";
+        // Modo local
+        keyStatusIcon.className = "fa-solid fa-circle-nodes text-indigo-400";
+        keyStatusText.innerText = "Modo Libre";
+        keyStatusText.className = "text-indigo-400 hidden xs:inline font-semibold";
+        btnOpenConfig.className = "flex items-center gap-1.5 sm:gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 transition text-xs sm:text-sm";
+
+        // Actualizar banner superior
+        statusNotice.className = "bg-indigo-950/40 border border-indigo-800/40 p-4 rounded-xl flex items-start gap-3";
+        statusNoticeIcon.className = "fa-solid fa-circle-info text-indigo-400 text-xl mt-0.5";
+        statusNoticeTitle.innerText = "Modo de Voz Nativo Activo";
+        statusNoticeTitle.className = "font-semibold text-indigo-300 text-sm";
+        statusNoticeDesc.innerText = "La app está usando las voces gratuitas integradas de tu navegador (Google/Sistema). Si deseas activar las correcciones avanzadas con Inteligencia Artificial y las voces hiperrealistas de Gemini, añade una clave en 'Modo Libre' arriba.";
+
+        // Mostrar u ocultar selectores de voz de Gemini
+        geminiVoiceWrapper.classList.add("hidden");
+        geminiVoiceWrapper.classList.remove("flex");
+        nativeVoiceBadge.classList.remove("hidden");
       }
     }
 
@@ -384,14 +442,14 @@
 
       originalText = rawText;
       
-      // Separar por oraciones usando expresión regular robusta
+      // Separar por oraciones usando expresión de puntuación
       sentences = rawText.match(/[^.!?]+[.!?]*/g) || [rawText];
       sentences = sentences.map(s => s.trim()).filter(s => s.length > 0);
 
       currentSentenceIdx = 0;
       practiceSection.classList.remove("hidden");
       
-      // Auto scroll hasta la práctica
+      // Desplazamiento suave a la práctica
       practiceSection.scrollIntoView({ behavior: 'smooth' });
 
       updatePracticeCard();
@@ -496,9 +554,8 @@
 
       recognition.onend = () => {
         if (isRecording) {
-          // Si el sistema detiene la grabación sola de forma imprevista
           stopRecordingState();
-          evaluateSpeechWithAI();
+          evaluateSpeech();
         }
       };
     }
@@ -510,14 +567,13 @@
           recognition.start();
         } catch (e) {
           console.error(e);
-          // Reiniciar para evitar bloqueos
           recognition.stop();
           setTimeout(() => recognition.start(), 300);
         }
       } else {
         stopRecordingState();
         recognition.stop();
-        evaluateSpeechWithAI();
+        evaluateSpeech();
       }
     });
 
@@ -530,14 +586,68 @@
       studentSpeechTranscript.classList.remove("text-emerald-300");
     }
 
-    // LLAMADAS EXPATRIADAS A GEMINI CON BACKOFF
+    // ENRUTADOR DE EVALUACIÓN (Gemini o Local)
+    function evaluateSpeech() {
+      const studentTranscription = studentSpeechTranscript.innerText.trim();
+      if (!studentTranscription || studentTranscription.startsWith("Presiona") || studentTranscription.startsWith("Escuchando")) {
+        return;
+      }
+
+      if (apiKey) {
+        evaluateSpeechWithAI();
+      } else {
+        evaluateSpeechLocally();
+      }
+    }
+
+    // EVALUACIÓN LOCAL (Rápida y gratuita sin llaves de API)
+    function evaluateSpeechLocally() {
+      const original = targetTextDisplay.innerText.trim();
+      const transcription = studentSpeechTranscript.innerText.trim();
+
+      feedbackContainer.classList.remove("hidden");
+      feedbackTitleText.innerText = "Retroalimentación (Modo Libre)";
+
+      // Limpieza simple de textos
+      const clean = (t) => t.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g,"").replace(/\s+/g," ").trim();
+      const origWords = clean(original).split(" ");
+      const transWords = clean(transcription).split(" ");
+      
+      let matches = 0;
+      origWords.forEach(w => {
+        if (transWords.includes(w)) {
+          matches++;
+        }
+      });
+      
+      const ratio = origWords.length > 0 ? (matches / origWords.length) : 0;
+      const score = Math.round(ratio * 10);
+      
+      scoreValue.innerText = score;
+      
+      let label = "¡Sigue practicando!";
+      let scoreColorClass = "text-amber-500";
+      if (score >= 9) {
+        label = "¡Buenísima precisión!";
+        scoreColorClass = "text-emerald-400";
+      } else if (score >= 7) {
+        label = "¡Excelente avance!";
+        scoreColorClass = "text-indigo-400";
+      }
+      
+      scoreValue.className = `text-4xl font-extrabold ${scoreColorClass}`;
+      scoreLabel.innerText = label;
+
+      feedbackText.innerText = `ℹ️ Has pronunciado correctamente aproximadamente el ${Math.round(ratio * 100)}% de las palabras que el sistema ha comparado.\n\nPara obtener un análisis de fluidez, entonación, errores específicos y consejos personalizados de nuestro Profesor IA, añade tu clave de Gemini arriba en el botón "Modo Libre".`;
+    }
+
+    // LLAMADAS EXPONENCIALES A GEMINI CON BACKOFF
     async function fetchWithRetry(url, options, retries = 5, delay = 1000) {
       for (let i = 0; i < retries; i++) {
         try {
           const response = await fetch(url, options);
           if (response.ok) return await response.json();
           if (response.status === 429) {
-            // Error de límite de cuota, aplicar exponencial backoff
             await new Promise(resolve => setTimeout(resolve, delay));
             delay *= 2;
             continue;
@@ -551,26 +661,16 @@
       }
     }
 
-    // EVALUACIÓN DE PRONUNCIACIÓN USANDO GEMINI (MODELO FLASH)
+    // EVALUACIÓN AVANZADA DE PRONUNCIACIÓN DE GEMINI
     async function evaluateSpeechWithAI() {
       const studentTranscription = studentSpeechTranscript.innerText.trim();
       const originalTextToCompare = targetTextDisplay.innerText.trim();
 
-      if (!studentTranscription || studentTranscription.startsWith("Presiona") || studentTranscription.startsWith("Escuchando")) {
-        return;
-      }
-
-      if (!apiKey) {
-        // Mostrar alerta simulada amigable sin usar alert() de ventana
-        showFeedbackError("Por favor ingresa tu API Key de Gemini en el panel de configuración arriba para activar al Profesor IA.");
-        return;
-      }
-
-      // Preparando UI para la espera de evaluación
       feedbackContainer.classList.remove("hidden");
+      feedbackTitleText.innerText = "Retroalimentación del Profesor de Idiomas (IA)";
       scoreValue.innerText = "...";
       scoreLabel.innerText = "Evaluando...";
-      feedbackText.innerText = "El profesor está analizando meticulosamente tu pronunciación, ritmo y exactitud. Por favor espera un momento...";
+      feedbackText.innerText = "El profesor IA está analizando meticulosamente tu pronunciación, entonación y ritmo. Por favor espera un momento...";
 
       const systemPrompt = `Actúas como un profesor nativo y altamente capacitado de idiomas para evaluar la pronunciación de un estudiante.
 Tu respuesta DEBE estar obligatoriamente formateada como un documento JSON con este esquema exacto:
@@ -614,7 +714,6 @@ Analiza las diferencias, si omitió palabras, si pronunció fonemas incorrectame
         const rawJsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
         const feedbackObj = JSON.parse(rawJsonText);
 
-        // Mostrar resultados en la UI de forma vistosa
         scoreValue.innerText = feedbackObj.puntuacion;
         
         let label = "¡Sigue practicando!";
@@ -633,7 +732,8 @@ Analiza las diferencias, si omitió palabras, si pronunció fonemas incorrectame
 
       } catch (err) {
         console.error(err);
-        showFeedbackError("Ocurrió un error al contactar al Profesor AI. Comprueba tu conexión a internet o tu API Key.");
+        showFeedbackError("Ocurrió un error al contactar al Profesor AI. Volviendo temporalmente a evaluación simplificada local...");
+        setTimeout(() => evaluateSpeechLocally(), 2000);
       }
     }
 
@@ -645,24 +745,75 @@ Analiza las diferencias, si omitió palabras, si pronunció fonemas incorrectame
       feedbackText.innerText = message;
     }
 
-    // REPRODUCIR CON VOCES REALISTAS DE GEMINI (TTS)
+    // REPRODUCCIÓN ENRUTADA (TTS NATIVO DEL NAVEGADOR O GEMINI)
     btnPlayTTS.addEventListener("click", async () => {
       const textToSpeak = targetTextDisplay.innerText.trim();
       if (!textToSpeak) return;
 
-      if (!apiKey) {
-        showFeedbackError("Por favor ingresa tu API Key de Gemini para activar las voces fotorrealistas de Gemini.");
-        return;
+      if (apiKey) {
+        // Reproducir con las voces avanzadas de Gemini
+        await playGeminiTTS(textToSpeak);
+      } else {
+        // Reproducir con las voces de Google / nativas del sistema
+        playNativeTTS(textToSpeak);
       }
+    });
 
-      // Desactivar el botón para evitar doble envío
+    // REPRODUCCIÓN NATIVA CON WEB SPEECH SYNTHESIS (DEL NAVEGADOR)
+    function playNativeTTS(text) {
+      if ('speechSynthesis' in window) {
+        // Cancelar cualquier lectura en curso
+        window.speechSynthesis.cancel();
+        
+        const utterance = new SpeechSynthesisUtterance(text);
+        const langCode = appLanguage.value;
+        utterance.lang = langCode;
+
+        // Intentar seleccionar la voz con el mejor acento local disponible en el navegador
+        const voices = window.speechSynthesis.getVoices();
+        
+        // Buscar voces con mayor realismo (ej. de Google o naturales del sistema)
+        const premiumVoice = voices.find(v => 
+          v.lang.replace('_', '-').toLowerCase() === langCode.toLowerCase() && 
+          (v.name.includes("Google") || v.name.includes("Natural") || v.name.includes("Premium"))
+        );
+
+        if (premiumVoice) {
+          utterance.voice = premiumVoice;
+        } else {
+          // Búsqueda aproximada del idioma si no se encuentra la exacta
+          const basicVoice = voices.find(v => v.lang.startsWith(langCode.substring(0, 2)));
+          if (basicVoice) utterance.voice = basicVoice;
+        }
+
+        // Efectos del botón mientras se reproduce
+        btnPlayTTS.disabled = true;
+        btnPlayTTS.innerHTML = '<i class="fa-solid fa-circle-play animate-pulse text-emerald-400"></i>';
+
+        utterance.onend = () => {
+          btnPlayTTS.disabled = false;
+          btnPlayTTS.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+        };
+
+        utterance.onerror = () => {
+          btnPlayTTS.disabled = false;
+          btnPlayTTS.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+        };
+
+        window.speechSynthesis.speak(utterance);
+      } else {
+        showFeedbackError("Tu navegador no soporta la reproducción de audio nativo.");
+      }
+    }
+
+    // REPRODUCCIÓN CON VOCES PREMIUM DE GEMINI (TTS)
+    async function playGeminiTTS(textToSpeak) {
       btnPlayTTS.disabled = true;
       btnPlayTTS.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i>';
 
       const selectedVoice = geminiVoiceSelect.value;
       const targetLang = appLanguage.options[appLanguage.selectedIndex].text;
 
-      // Prompt para que Gemini TTS lea de forma natural
       const promptText = `Please read this aloud in a perfectly natural, clear, and native voice in ${targetLang}. Focus on perfect pronunciation and natural pause structures: ${textToSpeak}`;
 
       const payload = {
@@ -693,8 +844,6 @@ Analiza las diferencias, si omitió palabras, si pronunció fonemas incorrectame
         if (inlineData && inlineData.data) {
           const base64Audio = inlineData.data;
           
-          // El tipo MIME de Gemini TTS suele ser "audio/L16;rate=24000" o similar.
-          // Extrapolamos el sampleRate (frecuencia de muestreo) desde el mimeType
           let sampleRate = 24000;
           if (inlineData.mimeType) {
             const match = inlineData.mimeType.match(/rate=(\d+)/);
@@ -703,26 +852,27 @@ Analiza las diferencias, si omitió palabras, si pronunció fonemas incorrectame
             }
           }
 
-          // Convertimos PCM raw de 16 bits a un blob WAV reproducible nativamente en navegador
           const wavUrl = pcmToWav(base64Audio, sampleRate);
-          
-          // Reproducir el audio
           const audio = new Audio(wavUrl);
+          
+          audio.onended = () => {
+            btnPlayTTS.disabled = false;
+            btnPlayTTS.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+          };
+          
           audio.play();
         } else {
-          throw new Error("No se devolvió audio en la respuesta.");
+          throw new Error("Formato de audio no devuelto");
         }
 
       } catch (err) {
-        console.error("Error en Gemini TTS: ", err);
-        showFeedbackError("No pudimos reproducir la pronunciación nativa. Asegúrate de tener una clave válida y activa de Gemini.");
-      } finally {
-        btnPlayTTS.disabled = false;
-        btnPlayTTS.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+        console.error("Error Gemini TTS: ", err);
+        // Fallback inmediato a voz nativa si falla la API
+        playNativeTTS(textToSpeak);
       }
-    });
+    }
 
-    // CONVERTIDOR PCM A WAV EN JAVASCRIPT PURO
+    // CONVERTIDOR PCM A WAV EN JAVASCRIPT
     function pcmToWav(pcmDataB64, sampleRate) {
       const binaryString = window.atob(pcmDataB64);
       const len = binaryString.length;
@@ -732,38 +882,23 @@ Analiza las diferencias, si omitió palabras, si pronunció fonemas incorrectame
       }
       const buffer = bytes.buffer;
 
-      // Crear contenedor de cabecera WAV de 44 Bytes
       const wavHeader = new ArrayBuffer(44);
       const view = new DataView(wavHeader);
 
-      // Marca "RIFF"
       writeString(view, 0, 'RIFF');
-      // Tamaño del archivo sin incluir "RIFF" y su propio tamaño de chunk
       view.setUint32(4, 36 + buffer.byteLength, true);
-      // Formato "WAVE"
       writeString(view, 8, 'WAVE');
-      // Subchunk "fmt "
       writeString(view, 12, 'fmt ');
-      // Tamaño de subchunk fmt (16 para PCM lineal)
       view.setUint32(16, 16, true);
-      // Tipo de codificación (1 = PCM sin comprimir)
       view.setUint16(20, 1, true);
-      // Canales (1 = Mono)
       view.setUint16(22, 1, true);
-      // Frecuencia de muestreo
       view.setUint32(24, sampleRate, true);
-      // Byte rate (sampleRate * numChannels * bitsPerSample/8)
       view.setUint32(28, sampleRate * 1 * 16 / 8, true);
-      // Block align (numChannels * bitsPerSample/8)
       view.setUint16(32, 1 * 16 / 8, true);
-      // Bits por muestra
       view.setUint16(34, 16, true);
-      // Subchunk "data"
       writeString(view, 36, 'data');
-      // Tamaño de datos de audio real
       view.setUint32(40, buffer.byteLength, true);
 
-      // Fusionar la cabecera WAV y los datos PCM en un solo Blob
       const blob = new Blob([wavHeader, buffer], { type: 'audio/wav' });
       return URL.createObjectURL(blob);
     }
