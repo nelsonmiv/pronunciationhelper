@@ -8,8 +8,10 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Tesseract.js para OCR en Cliente -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=300;400;500;600;700&display=swap');
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
     }
@@ -82,16 +84,27 @@
     <!-- SECCIÓN 1: INGRESO O CARGA DEL TEXTO -->
     <section class="bg-slate-800/50 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-sm">
       <div class="flex flex-col gap-3">
-        <div class="flex justify-between items-center">
+        <div class="flex justify-between items-center flex-wrap gap-2">
           <h2 class="font-semibold text-base sm:text-lg flex items-center gap-2 text-slate-200">
             <i class="fa-solid fa-file-text text-indigo-400"></i> 1. Cargar Texto de Práctica
           </h2>
-          <div class="flex gap-2">
-            <button onclick="loadSampleText('short')" class="text-xs text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 px-2 py-1 rounded">Ejemplo Corto</button>
-            <button onclick="loadSampleText('long')" class="text-xs text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 px-2 py-1 rounded">Ejemplo Largo</button>
+          <!-- Controles de Carga -->
+          <div class="flex items-center gap-2 flex-wrap">
+            <button id="btnOpenCamera" class="text-xs bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 px-2.5 py-1.5 rounded-lg border border-indigo-500/20 flex items-center gap-1 transition">
+              <i class="fa-solid fa-camera"></i> Escanear Libro
+            </button>
+            <button onclick="loadSampleText('short')" class="text-xs text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 px-2 py-1.5 rounded">Ejemplo Corto</button>
+            <button onclick="loadSampleText('long')" class="text-xs text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 px-2 py-1.5 rounded">Ejemplo Largo</button>
           </div>
         </div>
-        <textarea id="textInput" placeholder="Pega el texto o el párrafo aquí en el idioma que deseas practicar..." class="w-full h-32 bg-slate-900 border border-slate-700/80 rounded-xl p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base leading-relaxed"></textarea>
+        
+        <textarea id="textInput" placeholder="Pega el texto o el párrafo aquí, escanea con la cámara de un libro, o usa un ejemplo..." class="w-full h-32 bg-slate-900 border border-slate-700/80 rounded-xl p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base leading-relaxed"></textarea>
+        
+        <div class="flex justify-between items-center">
+          <span id="savedIndicator" class="text-xs text-emerald-400 hidden"><i class="fa-solid fa-cloud-arrow-up"></i> Progreso de lectura guardado localmente</span>
+          <div class="flex-1"></div>
+        </div>
+
         <button id="btnProcessText" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 px-4 rounded-xl shadow-lg shadow-indigo-600/10 hover:shadow-indigo-500/20 transition flex items-center justify-center gap-2 text-sm sm:text-base">
           <i class="fa-solid fa-wand-magic-sparkles"></i> Preparar Práctica
         </button>
@@ -216,6 +229,59 @@
 
   </main>
 
+  <!-- MODAL DE CÁMARA Y OCR -->
+  <div id="cameraModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl shadow-xl overflow-hidden flex flex-col">
+      
+      <div class="flex justify-between items-center p-5 border-b border-slate-800">
+        <h3 class="font-bold text-lg text-slate-100 flex items-center gap-2">
+          <i class="fa-solid fa-camera text-indigo-400"></i> Escanear Texto con OCR
+        </h3>
+        <button id="btnCloseCamera" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="p-5 flex flex-col gap-4 items-center">
+        <!-- Contenedor del Feed de Video o Carga de Archivos -->
+        <div class="relative w-full aspect-video bg-slate-950 rounded-xl border border-slate-800 overflow-hidden flex items-center justify-center">
+          <video id="cameraFeed" autoplay playsinline class="w-full h-full object-cover"></video>
+          <canvas id="captureCanvas" class="hidden"></canvas>
+          
+          <!-- Capa de Carga de OCR -->
+          <div id="ocrLoadingOverlay" class="absolute inset-0 bg-slate-950/80 flex flex-col items-center justify-center gap-3 hidden">
+            <i class="fa-solid fa-spinner animate-spin text-3xl text-indigo-500"></i>
+            <p id="ocrStatusMessage" class="text-sm font-semibold text-slate-300">Iniciando reconocimiento...</p>
+            <!-- Barra de progreso Tesseract -->
+            <div class="w-48 bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700">
+              <div id="ocrProgressBar" class="bg-indigo-500 h-full w-0 transition-all duration-300"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Controles de la cámara -->
+        <div id="cameraControls" class="flex flex-wrap gap-2 w-full justify-center">
+          <button id="btnCapturePhoto" class="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold py-2 px-5 rounded-xl transition flex items-center gap-2">
+            <i class="fa-solid fa-camera-retro"></i> Capturar Foto y Escanear
+          </button>
+          <button id="btnFlipCamera" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-semibold py-2 px-3 rounded-xl border border-slate-700 transition" title="Cambiar Cámara">
+            <i class="fa-solid fa-arrows-rotate"></i>
+          </button>
+        </div>
+
+        <!-- Fallback de carga de archivo si la cámara no sirve o no se quiere usar -->
+        <div class="w-full flex flex-col items-center gap-2 pt-2 border-t border-slate-800/80">
+          <p class="text-[11px] text-slate-500">O carga una imagen directamente desde tu dispositivo:</p>
+          <label for="imageUploadInput" class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs py-2 px-4 rounded-xl border border-slate-700 flex items-center gap-2 transition">
+            <i class="fa-solid fa-file-image text-indigo-400"></i> Seleccionar una Imagen
+          </label>
+          <input id="imageUploadInput" type="file" accept="image/*" class="hidden">
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <!-- MODAL CONFIGURACIÓN API KEY -->
   <div id="configModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
     <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
@@ -263,18 +329,22 @@
   <footer class="mt-auto border-t border-slate-800/60 py-4 text-center text-xs text-slate-500">
     <div class="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
       <p>&copy; 2026 VocalAI - Tutor Inteligente de Pronunciación.</p>
-      <p class="flex items-center gap-1"><i class="fa-solid fa-shield-halved text-indigo-500/80"></i> Datos procesados localmente mediante Google API</p>
+      <p class="flex items-center gap-1"><i class="fa-solid fa-shield-halved text-indigo-500/80"></i> Datos procesados localmente en el dispositivo</p>
     </div>
   </footer>
 
   <script>
     // Variables de Estado
     let apiKey = localStorage.getItem("gemini_api_key") || "";
-    let originalText = "";
+    let originalText = localStorage.getItem("vocalai_saved_text") || "";
     let sentences = [];
     let currentSentenceIdx = 0;
     let practiceMode = "oraciones"; // "oraciones" o "completo"
     let isRecording = false;
+
+    // Variables de Cámara y OCR
+    let videoStream = null;
+    let cameraFacingMode = "environment"; // "environment" (trasera) o "user" (frontal)
 
     // Servicios del Navegador para Reconocimiento de Voz (Web Speech API)
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -304,6 +374,7 @@
     const textInput = document.getElementById("textInput");
     const btnProcessText = document.getElementById("btnProcessText");
     const appLanguage = document.getElementById("appLanguage");
+    const savedIndicator = document.getElementById("savedIndicator");
 
     const practiceSection = document.getElementById("practiceSection");
     const tabOraciones = document.getElementById("tabOraciones");
@@ -331,10 +402,32 @@
     const scoreLabel = document.getElementById("scoreLabel");
     const feedbackText = document.getElementById("feedbackText");
 
+    // Elementos del Modal de Cámara/OCR
+    const btnOpenCamera = document.getElementById("btnOpenCamera");
+    const btnCloseCamera = document.getElementById("btnCloseCamera");
+    const cameraModal = document.getElementById("cameraModal");
+    const cameraFeed = document.getElementById("cameraFeed");
+    const captureCanvas = document.getElementById("captureCanvas");
+    const btnCapturePhoto = document.getElementById("btnCapturePhoto");
+    const btnFlipCamera = document.getElementById("btnFlipCamera");
+    const imageUploadInput = document.getElementById("imageUploadInput");
+    const ocrLoadingOverlay = document.getElementById("ocrLoadingOverlay");
+    const ocrStatusMessage = document.getElementById("ocrStatusMessage");
+    const ocrProgressBar = document.getElementById("ocrProgressBar");
+
     // Inicialización de la Aplicación
     window.addEventListener("DOMContentLoaded", () => {
       updateApiKeyStatus();
-      loadSampleText('short');
+      
+      // Intentar cargar el último texto guardado de forma persistente
+      if (originalText) {
+        textInput.value = originalText;
+        savedIndicator.classList.remove("hidden");
+        // Preparar la sesión inmediatamente si hay datos persistentes
+        preparePracticeSession(originalText);
+      } else {
+        loadSampleText('short');
+      }
       
       // Reconocimiento de voz setup
       if (!recognition) {
@@ -348,9 +441,7 @@
       // Asegurar que las voces del navegador estén cargadas
       if ('speechSynthesis' in window) {
         window.speechSynthesis.getVoices();
-        window.speechSynthesis.onvoiceschanged = () => {
-          // Evento gatillo para Chrome
-        };
+        window.speechSynthesis.onvoiceschanged = () => {};
       }
     });
 
@@ -388,38 +479,32 @@
 
     function updateApiKeyStatus() {
       if (apiKey) {
-        // Modo Premium con Gemini
         keyStatusIcon.className = "fa-solid fa-circle-check text-emerald-400";
         keyStatusText.innerText = "Modo IA Premium";
         keyStatusText.className = "text-emerald-400 hidden xs:inline font-semibold";
         btnOpenConfig.className = "flex items-center gap-1.5 sm:gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-emerald-500/50 transition text-xs sm:text-sm";
 
-        // Actualizar banner superior
         statusNotice.className = "bg-emerald-950/20 border border-emerald-800/40 p-4 rounded-xl flex items-start gap-3";
         statusNoticeIcon.className = "fa-solid fa-wand-magic-sparkles text-emerald-400 text-xl mt-0.5";
         statusNoticeTitle.innerText = "Modo Premium Activo";
         statusNoticeTitle.className = "font-semibold text-emerald-300 text-sm";
         statusNoticeDesc.innerText = "¡Súper! El sistema está utilizando el Profesor de Inteligencia Artificial de Gemini para darte correcciones fonéticas y de entonación profundas, junto con voces ultra-realistas.";
 
-        // Mostrar u ocultar selectores de voz de Gemini
         geminiVoiceWrapper.classList.remove("hidden");
         geminiVoiceWrapper.classList.add("flex");
         nativeVoiceBadge.classList.add("hidden");
       } else {
-        // Modo local
         keyStatusIcon.className = "fa-solid fa-circle-nodes text-indigo-400";
         keyStatusText.innerText = "Modo Libre";
         keyStatusText.className = "text-indigo-400 hidden xs:inline font-semibold";
         btnOpenConfig.className = "flex items-center gap-1.5 sm:gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 transition text-xs sm:text-sm";
 
-        // Actualizar banner superior
         statusNotice.className = "bg-indigo-950/40 border border-indigo-800/40 p-4 rounded-xl flex items-start gap-3";
         statusNoticeIcon.className = "fa-solid fa-circle-info text-indigo-400 text-xl mt-0.5";
         statusNoticeTitle.innerText = "Modo de Voz Nativo Activo";
         statusNoticeTitle.className = "font-semibold text-indigo-300 text-sm";
         statusNoticeDesc.innerText = "La app está usando las voces gratuitas integradas de tu navegador (Google/Sistema). Si deseas activar las correcciones avanzadas con Inteligencia Artificial y las voces hiperrealistas de Gemini, añade una clave en 'Modo Libre' arriba.";
 
-        // Mostrar u ocultar selectores de voz de Gemini
         geminiVoiceWrapper.classList.add("hidden");
         geminiVoiceWrapper.classList.remove("flex");
         nativeVoiceBadge.classList.remove("hidden");
@@ -433,27 +518,36 @@
       } else {
         textInput.value = "The beautiful thing about learning is that no one can take it away from you. Success is not final, failure is not fatal: it is the courage to continue that counts. Don't limit your challenges. Challenge your limits.";
       }
+      savedIndicator.classList.add("hidden");
     }
 
-    // Procesar el Texto ingresado
+    // Procesar el texto para dividirlo y empezar la práctica
     btnProcessText.addEventListener("click", () => {
       const rawText = textInput.value.trim();
       if (!rawText) return;
 
-      originalText = rawText;
+      // Guardar el texto de manera persistente en localStorage
+      localStorage.setItem("vocalai_saved_text", rawText);
+      savedIndicator.classList.remove("hidden");
+
+      preparePracticeSession(rawText);
+      
+      // Desplazamiento suave a la práctica
+      practiceSection.scrollIntoView({ behavior: 'smooth' });
+    });
+
+    function preparePracticeSession(text) {
+      originalText = text;
       
       // Separar por oraciones usando expresión de puntuación
-      sentences = rawText.match(/[^.!?]+[.!?]*/g) || [rawText];
+      sentences = text.match(/[^.!?]+[.!?]*/g) || [text];
       sentences = sentences.map(s => s.trim()).filter(s => s.length > 0);
 
       currentSentenceIdx = 0;
       practiceSection.classList.remove("hidden");
-      
-      // Desplazamiento suave a la práctica
-      practiceSection.scrollIntoView({ behavior: 'smooth' });
 
       updatePracticeCard();
-    });
+    }
 
     // Tabs de Modos de Práctica
     tabOraciones.addEventListener("click", () => {
@@ -489,7 +583,6 @@
 
     // Actualizar Contenido de la Tarjeta de Práctica
     function updatePracticeCard() {
-      // Limpiar estados anteriores
       studentSpeechTranscript.innerText = "Presiona el botón de micrófono para comenzar a hablar...";
       feedbackContainer.classList.add("hidden");
       
@@ -502,7 +595,6 @@
         btnPrevSentence.disabled = currentSentenceIdx === 0;
         btnNextSentence.disabled = currentSentenceIdx === sentences.length - 1;
       } else {
-        // Modo Completo
         targetTextDisplay.innerText = originalText;
       }
     }
@@ -511,7 +603,6 @@
     function setupRecognitionEvents() {
       recognition.lang = appLanguage.value;
       
-      // Al cambiar el selector de idioma de la app
       appLanguage.addEventListener("change", () => {
         recognition.lang = appLanguage.value;
       });
@@ -560,7 +651,6 @@
       };
     }
 
-    // Alternar grabación
     btnRecord.addEventListener("click", () => {
       if (!isRecording) {
         try {
@@ -586,7 +676,7 @@
       studentSpeechTranscript.classList.remove("text-emerald-300");
     }
 
-    // ENRUTADOR DE EVALUACIÓN (Gemini o Local)
+    // ENRUTADOR DE EVALUACIÓN
     function evaluateSpeech() {
       const studentTranscription = studentSpeechTranscript.innerText.trim();
       if (!studentTranscription || studentTranscription.startsWith("Presiona") || studentTranscription.startsWith("Escuchando")) {
@@ -608,7 +698,6 @@
       feedbackContainer.classList.remove("hidden");
       feedbackTitleText.innerText = "Retroalimentación (Modo Libre)";
 
-      // Limpieza simple de textos
       const clean = (t) => t.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g,"").replace(/\s+/g," ").trim();
       const origWords = clean(original).split(" ");
       const transWords = clean(transcription).split(" ");
@@ -641,7 +730,7 @@
       feedbackText.innerText = `ℹ️ Has pronunciado correctamente aproximadamente el ${Math.round(ratio * 100)}% de las palabras que el sistema ha comparado.\n\nPara obtener un análisis de fluidez, entonación, errores específicos y consejos personalizados de nuestro Profesor IA, añade tu clave de Gemini arriba en el botón "Modo Libre".`;
     }
 
-    // LLAMADAS EXPONENCIALES A GEMINI CON BACKOFF
+    // LLAMADAS CON RETRY & BACKOFF EXPONENCIAL
     async function fetchWithRetry(url, options, retries = 5, delay = 1000) {
       for (let i = 0; i < retries; i++) {
         try {
@@ -745,34 +834,28 @@ Analiza las diferencias, si omitió palabras, si pronunció fonemas incorrectame
       feedbackText.innerText = message;
     }
 
-    // REPRODUCCIÓN ENRUTADA (TTS NATIVO DEL NAVEGADOR O GEMINI)
+    // REPRODUCCIÓN ENRUTADA (NATIVO O GEMINI)
     btnPlayTTS.addEventListener("click", async () => {
       const textToSpeak = targetTextDisplay.innerText.trim();
       if (!textToSpeak) return;
 
       if (apiKey) {
-        // Reproducir con las voces avanzadas de Gemini
         await playGeminiTTS(textToSpeak);
       } else {
-        // Reproducir con las voces de Google / nativas del sistema
         playNativeTTS(textToSpeak);
       }
     });
 
-    // REPRODUCCIÓN NATIVA CON WEB SPEECH SYNTHESIS (DEL NAVEGADOR)
     function playNativeTTS(text) {
       if ('speechSynthesis' in window) {
-        // Cancelar cualquier lectura en curso
         window.speechSynthesis.cancel();
         
         const utterance = new SpeechSynthesisUtterance(text);
         const langCode = appLanguage.value;
         utterance.lang = langCode;
 
-        // Intentar seleccionar la voz con el mejor acento local disponible en el navegador
         const voices = window.speechSynthesis.getVoices();
         
-        // Buscar voces con mayor realismo (ej. de Google o naturales del sistema)
         const premiumVoice = voices.find(v => 
           v.lang.replace('_', '-').toLowerCase() === langCode.toLowerCase() && 
           (v.name.includes("Google") || v.name.includes("Natural") || v.name.includes("Premium"))
@@ -781,12 +864,10 @@ Analiza las diferencias, si omitió palabras, si pronunció fonemas incorrectame
         if (premiumVoice) {
           utterance.voice = premiumVoice;
         } else {
-          // Búsqueda aproximada del idioma si no se encuentra la exacta
           const basicVoice = voices.find(v => v.lang.startsWith(langCode.substring(0, 2)));
           if (basicVoice) utterance.voice = basicVoice;
         }
 
-        // Efectos del botón mientras se reproduce
         btnPlayTTS.disabled = true;
         btnPlayTTS.innerHTML = '<i class="fa-solid fa-circle-play animate-pulse text-emerald-400"></i>';
 
@@ -806,7 +887,6 @@ Analiza las diferencias, si omitió palabras, si pronunció fonemas incorrectame
       }
     }
 
-    // REPRODUCCIÓN CON VOCES PREMIUM DE GEMINI (TTS)
     async function playGeminiTTS(textToSpeak) {
       btnPlayTTS.disabled = true;
       btnPlayTTS.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i>';
@@ -867,12 +947,10 @@ Analiza las diferencias, si omitió palabras, si pronunció fonemas incorrectame
 
       } catch (err) {
         console.error("Error Gemini TTS: ", err);
-        // Fallback inmediato a voz nativa si falla la API
         playNativeTTS(textToSpeak);
       }
     }
 
-    // CONVERTIDOR PCM A WAV EN JAVASCRIPT
     function pcmToWav(pcmDataB64, sampleRate) {
       const binaryString = window.atob(pcmDataB64);
       const len = binaryString.length;
@@ -906,6 +984,164 @@ Analiza las diferencias, si omitió palabras, si pronunció fonemas incorrectame
     function writeString(view, offset, string) {
       for (let i = 0; i < string.length; i++) {
         view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    }
+
+    // ==========================================
+    // SISTEMA OCR, CÁMARA Y ARCHIVOS (TESSERACT)
+    // ==========================================
+
+    // Mapear el idioma seleccionado para mejorar la precisión del OCR
+    function getTesseractLang(appLang) {
+      const mapping = {
+        'es-ES': 'spa',
+        'en-US': 'eng',
+        'en-GB': 'eng',
+        'fr-FR': 'fra',
+        'de-DE': 'deu',
+        'it-IT': 'ita',
+        'pt-BR': 'por'
+      };
+      return mapping[appLang] || 'eng';
+    }
+
+    // Abrir Modal de Cámara
+    btnOpenCamera.addEventListener("click", async () => {
+      cameraModal.classList.remove("hidden");
+      await startCamera();
+    });
+
+    // Cerrar Modal de Cámara
+    btnCloseCamera.addEventListener("click", () => {
+      stopCamera();
+      cameraModal.classList.add("hidden");
+    });
+
+    // Iniciar Transmisión de Cámara
+    async function startCamera() {
+      if (videoStream) {
+        stopCamera();
+      }
+
+      const constraints = {
+        video: {
+          facingMode: cameraFacingMode,
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false
+      };
+
+      try {
+        videoStream = await navigator.mediaDevices.getUserMedia(constraints);
+        cameraFeed.srcObject = videoStream;
+        cameraFeed.classList.remove("hidden");
+      } catch (err) {
+        console.error("No se pudo acceder a la cámara:", err);
+        cameraFeed.classList.add("hidden");
+        alert("No se pudo activar la cámara trasera o no hay permisos. Puedes usar la opción 'Seleccionar una Imagen' abajo.");
+      }
+    }
+
+    // Detener Cámara
+    function stopCamera() {
+      if (videoStream) {
+        videoStream.getTracks().forEach(track => track.stop());
+        videoStream = null;
+      }
+      cameraFeed.srcObject = null;
+    }
+
+    // Alternar entre Cámara Frontal/Trasera
+    btnFlipCamera.addEventListener("click", async () => {
+      cameraFacingMode = cameraFacingMode === "environment" ? "user" : "environment";
+      await startCamera();
+    });
+
+    // Capturar Foto desde el Feed y Ejecutar OCR
+    btnCapturePhoto.addEventListener("click", async () => {
+      if (!videoStream) return;
+
+      // Dibujar la imagen actual de la cámara en el canvas oculto
+      captureCanvas.width = cameraFeed.videoWidth;
+      captureCanvas.height = cameraFeed.videoHeight;
+      const ctx = captureCanvas.getContext("2d");
+      ctx.drawImage(cameraFeed, 0, 0, captureCanvas.width, captureCanvas.height);
+
+      // Convertir el lienzo a imagen Base64 para pasarle a Tesseract
+      const dataUrl = captureCanvas.toDataURL("image/jpeg");
+      
+      // Detener cámara para ahorrar batería/recursos
+      stopCamera();
+
+      // Procesar la imagen con OCR
+      await processImageOCR(dataUrl);
+    });
+
+    // Cargar imagen de la galería/archivos y procesar con OCR
+    imageUploadInput.addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        stopCamera(); // Detener cámara si estaba activa
+        await processImageOCR(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Función Centralizadora de Procesamiento OCR Tesseract
+    async function processImageOCR(imageSrc) {
+      ocrLoadingOverlay.classList.remove("hidden");
+      ocrStatusMessage.innerText = "Preparando motor de lectura...";
+      ocrProgressBar.style.width = "10%";
+
+      const selectedLang = getTesseractLang(appLanguage.value);
+
+      try {
+        const worker = await Tesseract.createWorker({
+          logger: m => {
+            if (m.status === 'recognizing text') {
+              ocrStatusMessage.innerText = `Identificando palabras (${Math.round(m.progress * 100)}%)...`;
+              ocrProgressBar.style.width = `${Math.round(m.progress * 100)}%`;
+            } else {
+              ocrStatusMessage.innerText = "Cargando bibliotecas de idioma...";
+            }
+          }
+        });
+
+        // Configurar e inicializar idioma seleccionado
+        await worker.loadLanguage(selectedLang);
+        await worker.initialize(selectedLang);
+        
+        // Ejecutar OCR
+        const { data: { text } } = await worker.recognize(imageSrc);
+        await worker.terminate();
+
+        const cleanText = text.replace(/\n+/g, " ").trim();
+
+        if (cleanText) {
+          textInput.value = cleanText;
+          localStorage.setItem("vocalai_saved_text", cleanText); // Guardar de forma persistente
+          savedIndicator.classList.remove("hidden");
+          
+          // Cerrar modal de cámara
+          cameraModal.classList.add("hidden");
+          
+          // Auto preparar sesión de práctica de inmediato
+          preparePracticeSession(cleanText);
+          practiceSection.scrollIntoView({ behavior: 'smooth' });
+        } else {
+          alert("No se logró extraer ningún texto de la imagen. Intenta con una toma más nítida o mejor iluminada.");
+        }
+
+      } catch (err) {
+        console.error("Error en OCR:", err);
+        alert("Ocurrió un error al procesar el texto con OCR. Inténtalo de nuevo o escribe manualmente.");
+      } finally {
+        ocrLoadingOverlay.classList.add("hidden");
+        ocrProgressBar.style.width = "0%";
       }
     }
   </script>
